@@ -68,7 +68,9 @@ app.get('/' + urlFilmes ,function(req , res){
 });
 
 app.get('/' + urlRelatorio , function(req , res){
-    var sql = "SELECT dm104.vendas.idFilme , count(*) FROM dm104.vendas group by dm104.vendas.idFilme LIMIT 5;"; 
+    var sql = " SELECT dm104.vendas.idFilme as id , count(*) as total , " +
+			  " (select dm104.filmes.titulo from dm104.filmes where filmes.idFilmes = idFilme) as titulo "+
+              "	 FROM dm104.vendas group by dm104.vendas.idFilme LIMIT 5; "; 
     resultado = connection.con.query(sql, function (err, rows, fields) {        
         if (err) throw "Falha no relatorio == > " + err;     
         res.status(200).send( rows ) ;
@@ -137,11 +139,12 @@ app.post('/' + urlClientes , function(req, res){
 // --- funcoes do PUT --- //
 //    deve ser enviado [{"key":"Content-Type","value":"application/json","description":""}]
 app.put('/'+urlVendas , function(req, res){
-    var sql = " UPDATE dm104.vendas                                          " +
-               " SET idCliente = ? , dataVenda = ? , total = ? , idFilme = ? " + 
-               " where idVendas = ?                                          " ; 
+    var sql = " UPDATE dm104.vendas                                         " +
+              " SET idCliente = ? , dataVenda = ? , total = ? , idFilme = ? " + 
+              " where idVendas = ?                                          " ; 
+			  
     resultado = connection.con.query(sql , [req.body.idCliente , req.body.dataVenda , 
-                                            req.body.total , req.body.idVendas , req.body.idFilme ] , 
+                                            req.body.total , req.body.idFilme , req.body.idVendas ] , 
     function (err, resulst) {        
         if (err) throw "Falha na atualizacao da venda == > " + err;      
         res.status(200).send( "OK") ;
@@ -150,7 +153,7 @@ app.put('/'+urlVendas , function(req, res){
 
 app.put('/'+urlClientes , function(req, res){
     var sql = " UPDATE dm104.cliente  " +
-               " SET nome = ?         " + 
+               " SET Nome = ?         " + 
                " where idCliente = ?  " ; 
     resultado = connection.con.query(sql , [req.body.nome , req.body.idCliente ] , 
     function (err, resulst) {        
