@@ -11,7 +11,7 @@ var connection = require ('./CONTROLLER/connection.js');
 const urlClientes   = "cliente"; 
 const urlVendas     = "venda";
 const urlFilmes     = "filme";
-const urlItensVenda = "itensVenda"
+const urlRelatorio  = "relatorio";
 
 // cria o express e usa o parser como json
 var app = express();
@@ -25,6 +25,15 @@ function notFound(res){
 // escuta a porta 8089 
 app.listen(8089 ,function(){
     console.log('Trabalho final DM104 - INATEL [INICIADO]');
+});
+
+// libera o CORS
+app.all('/*', function(req, res, next) {
+	res.status(200);
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods","POST, GET, OPTIONS, DELETE, PUT, HEAD");
+	next();
 });
 
 // acessando o / retorna um status , poderia ser o WSDL
@@ -58,14 +67,13 @@ app.get('/' + urlFilmes ,function(req , res){
     });  
 });
 
-app.get('/' + urlItensVenda ,function(req , res){
-    var sql = "select * from dm104.itensvenda"; 
+app.get('/' + urlRelatorio , function(req , res){
+    var sql = "SELECT dm104.vendas.idFilme , count(*) FROM dm104.vendas group by dm104.vendas.idFilme LIMIT 5;"; 
     resultado = connection.con.query(sql, function (err, rows, fields) {        
-        if (err) throw "Falha na consulta dos itens da venda == > " + err;      
+        if (err) throw "Falha no relatorio == > " + err;     
         res.status(200).send( rows ) ;
-    });  
+    });    
 });
-
 
 
 // --- funcoes do GET por id --- //
@@ -93,15 +101,6 @@ app.get('/'+urlClientes+'/:id' , function(req, res){
     });
 });
 
-app.get('/'+urlItensVenda+'/:id' , function(req, res){
-    var sql = "SELECT * FROM dm104.itensvenda where dm104.itensvenda.idvendas = ?"; 
-    resultado = connection.con.query(sql , [req.params.id] , function (err, rows, fields) {        
-        if (err) throw "Falha na consulta dos itens da venda == > " + err;      
-        res.status(200).send( rows ) ;
-    });  
-});
-
-
 // --- funcoes do POST --- // 
 //    deve ser enviado [{"key":"Content-Type","value":"application/json","description":""}]
 app.post('/' + urlFilmes , function(req, res){    
@@ -115,9 +114,9 @@ app.post('/' + urlFilmes , function(req, res){
 });
 
 app.post('/' + urlVendas , function(req, res){    
-    var sql = " INSERT INTO dm104.vendas (idCliente , dataVenda , total) " + 
-              " values ( ? , ? , ?  )                                    " ; 
-    resultado = connection.con.query(sql , [req.body.idCliente , req.body.dataVenda , req.body.total ] , 
+    var sql = " INSERT INTO dm104.vendas (idCliente , dataVenda , total , idFilme) " + 
+              " values ( ? , ? , ? ,? )                                            " ; 
+    resultado = connection.con.query(sql , [req.body.idCliente , req.body.dataVenda , req.body.total , req.body.idFilme] , 
     function (err, resulst) {        
         if (err) throw "Falha na insercao da venda == > " + err;      
         res.status(200).send( "OK") ;
@@ -134,27 +133,15 @@ app.post('/' + urlClientes , function(req, res){
     }); 
 });
 
-app.post('/' + urlItensVenda , function(req, res){    
-    var sql = " INSERT INTO dm104.itensvenda (idFilmes , idVendas , quantidade , preco) " + 
-              " values ( ? , ? , ? , ? )                                                " ; 
-    resultado = connection.con.query(sql , [req.body.idFilmes , req.body.idVendas , 
-                                            req.body.quantidade , req.body.preco ] , 
-    function (err, resulst) {        
-        if (err) throw "Falha na insercao do item da venda == > " + err;      
-        res.status(200).send( "OK") ;
-    }); 
-});
-
-
 
 // --- funcoes do PUT --- //
 //    deve ser enviado [{"key":"Content-Type","value":"application/json","description":""}]
 app.put('/'+urlVendas , function(req, res){
-    var sql = " UPDATE dm104.vendas                            " +
-               " SET idCliente = ? , dataVenda = ? , total = ? " + 
-               " where idVendas = ?                            " ; 
+    var sql = " UPDATE dm104.vendas                                          " +
+               " SET idCliente = ? , dataVenda = ? , total = ? , idFilme = ? " + 
+               " where idVendas = ?                                          " ; 
     resultado = connection.con.query(sql , [req.body.idCliente , req.body.dataVenda , 
-                                            req.body.total , req.body.idVendas ] , 
+                                            req.body.total , req.body.idVendas , req.body.idFilme ] , 
     function (err, resulst) {        
         if (err) throw "Falha na atualizacao da venda == > " + err;      
         res.status(200).send( "OK") ;
@@ -184,24 +171,11 @@ app.put('/'+urlFilmes , function(req, res){
     });
 });
 
-app.put('/'+urlItensVenda , function(req, res){
-    var sql = " UPDATE dm104.itensvenda                                      " +
-              " SET idFilmes = ? , idVendas = ? , quantidade = ? , preco = ? " + 
-              " where idItensVenda = ?                                       " ; 
-    resultado = connection.con.query(sql , [req.body.idFilmes , req.body.idVendas , 
-                      req.body.quantidade , req.body.preco , req.body.idItensVenda ] , 
-    function (err, resulst) {        
-        if (err) throw "Falha na atualizacao dos itens da venda == > " + err;      
-        res.status(200).send( "OK") ;
-    }); 
-});
-
 
 // --- funcoes do DELETE --- //
 app.delete('/'+urlVendas+'/:id' , function(req, res){
-    var sql = " DELETE FROM dm104.vendas , dm104.itensvenda           " +
-              " where dm104.vendas.idVendas = ? and                   " + 
-              "       dm104.itensvenda.idVendas = dm104.venda.idVenda " ; 
+    var sql = " DELETE FROM dm104.vendas        " +
+              " where dm104.vendas.idVendas = ? " ; 
 
     resultado = connection.con.query(sql , [req.params.id] , function (err, resulst) {        
         if (err) throw "Falha na exclusao da venda == > " + err;      
@@ -223,12 +197,4 @@ app.delete('/'+urlClientes+'/:id' , function(req, res){
         if (err) throw "Falha na exclusao de cliente == > " + err;      
         res.status(200).send( "OK") ;
     }); 
-});
-
-app.delete('/'+urlItensVenda+'/:id' , function(req, res){
-    var sql = "DELETE FROM dm104.itensvenda where dm104.itensvenda.idItensVenda = ?"; 
-    resultado = connection.con.query(sql , [req.params.id] , function (err, resulst) {        
-        if (err) throw "Falha na exclusao dos itens da venda == > " + err;      
-        res.status(200).send( "OK" ) ;
-    });  
 });

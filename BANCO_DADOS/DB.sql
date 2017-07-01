@@ -12,22 +12,12 @@ CREATE TABLE Filmes (
   PRIMARY KEY(idFilmes)
 );
 
-CREATE TABLE ItensVenda (
-  idItensVenda INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  idFilmes INTEGER UNSIGNED NOT NULL,
-  idVendas INTEGER UNSIGNED NOT NULL,
-  quantidade INTEGER UNSIGNED NULL,
-  preco NUMERIC NULL,
-  PRIMARY KEY(idItensVenda),
-  INDEX ItensVenda_FKIndex1(idVendas),
-  INDEX ItensVenda_FKIndex2(idFilmes)
-);
-
 CREATE TABLE Vendas (
   idVendas INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   idCliente INTEGER UNSIGNED NOT NULL,
   dataVenda DATETIME NULL,
   total NUMERIC NULL,
+  idFilme int(10) NOT NULL,
   PRIMARY KEY(idVendas),
   INDEX Vendas_FKIndex1(idCliente)
 );
